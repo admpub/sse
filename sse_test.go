@@ -28,6 +28,7 @@ data:id:fake
 `)
 
 	decoded, _ := Decode(w)
+	event.Event = `message`
 	assert.Equal(t, decoded, []Event{event})
 }
 
