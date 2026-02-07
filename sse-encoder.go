@@ -38,52 +38,88 @@ type Event struct {
 	Data  interface{}
 }
 
-func Encode(writer io.Writer, event Event) error {
+func Encode(writer io.Writer, event Event) (err error) {
 	w := checkWriter(writer)
-	writeId(w, event.Id)
-	writeEvent(w, event.Event)
-	writeRetry(w, event.Retry)
+	err = writeId(w, event.Id)
+	if err != nil {
+		return
+	}
+	err = writeEvent(w, event.Event)
+	if err != nil {
+		return
+	}
+	err = writeRetry(w, event.Retry)
+	if err != nil {
+		return
+	}
 	return writeData(w, event.Data)
 }
 
-func writeId(w stringWriter, id string) {
+func writeId(w stringWriter, id string) (err error) {
 	if len(id) > 0 {
-		w.WriteString("id:")
-		fieldReplacer.WriteString(w, id)
-		w.WriteString("\n")
+		_, err = w.WriteString("id:")
+		if err != nil {
+			return
+		}
+		_, err = fieldReplacer.WriteString(w, id)
+		if err != nil {
+			return
+		}
+		_, err = w.WriteString("\n")
 	}
+	return
 }
 
-func writeEvent(w stringWriter, event string) {
+func writeEvent(w stringWriter, event string) (err error) {
 	if len(event) > 0 {
-		w.WriteString("event:")
-		fieldReplacer.WriteString(w, event)
-		w.WriteString("\n")
+		_, err = w.WriteString("event:")
+		if err != nil {
+			return
+		}
+		_, err = fieldReplacer.WriteString(w, event)
+		if err != nil {
+			return
+		}
+		_, err = w.WriteString("\n")
 	}
+	return
 }
 
-func writeRetry(w stringWriter, retry uint) {
+func writeRetry(w stringWriter, retry uint) (err error) {
 	if retry > 0 {
-		w.WriteString("retry:")
-		w.WriteString(strconv.FormatUint(uint64(retry), 10))
-		w.WriteString("\n")
+		_, err = w.WriteString("retry:")
+		if err != nil {
+			return
+		}
+		_, err = w.WriteString(strconv.FormatUint(uint64(retry), 10))
+		if err != nil {
+			return
+		}
+		_, err = w.WriteString("\n")
 	}
+	return
 }
 
-func writeData(w stringWriter, data interface{}) error {
-	w.WriteString("data:")
+func writeData(w stringWriter, data interface{}) (err error) {
+	_, err = w.WriteString("data:")
+	if err != nil {
+		return
+	}
 	switch kindOfData(data) {
 	case reflect.Struct, reflect.Slice, reflect.Map:
-		err := json.NewEncoder(w).Encode(data)
+		err = json.NewEncoder(w).Encode(data)
 		if err != nil {
-			return err
+			return
 		}
-		w.WriteString("\n")
+		_, err = w.WriteString("\n")
 	default:
-		dataReplacer.WriteString(w, fmt.Sprint(data))
-		w.WriteString("\n\n")
+		_, err = dataReplacer.WriteString(w, fmt.Sprint(data))
+		if err != nil {
+			return
+		}
+		_, err = w.WriteString("\n\n")
 	}
-	return nil
+	return
 }
 
 func (r Event) Render(w http.ResponseWriter) error {
